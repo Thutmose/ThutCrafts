@@ -32,6 +32,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedOutEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
@@ -211,7 +212,7 @@ public class ThutCrafts
         ItemStack itemstack = evt.getItemStack();
         EntityPlayer playerIn = evt.getEntityPlayer();
         World worldIn = evt.getWorld();
-        System.out.println("Test");
+        if (!itemstack.getDisplayName().equals("Craft")) return;
         if (itemstack.hasTagCompound() && playerIn.isSneaking() && itemstack.getTagCompound().hasKey("min")
                 && itemstack.getTagCompound().getLong("time") != worldIn.getWorldTime())
         {
@@ -227,9 +228,8 @@ public class ThutCrafts
             BlockPos mid = min.add((max.getX() - min.getX()) / 2, 0, (max.getZ() - min.getZ()) / 2);
             min = min.subtract(mid);
             max = max.subtract(mid);
-
             int dw = Math.max(max.getX() - min.getX(), max.getZ() - min.getZ());
-            if (max.getY() - min.getY() > 10 || dw > 2 * 5 + 1)
+            if (max.getY() - min.getY() > 15 || dw > 2 * 10 + 1)
             {
                 String message = "msg.lift.toobig";
                 if (!worldIn.isRemote) playerIn.addChatMessage(new TextComponentTranslation(message));
@@ -254,9 +254,8 @@ public class ThutCrafts
         if (evt.getHand() == EnumHand.OFF_HAND || evt.getWorld().isRemote || evt.getItemStack() == null
                 || !evt.getEntityPlayer().isSneaking() || evt.getItemStack().getItem() != Items.STICK)
             return;
-
-        System.out.println("Test2");
         ItemStack itemstack = evt.getItemStack();
+        if (!itemstack.getDisplayName().equals("Craft")) return;
         EntityPlayer playerIn = evt.getEntityPlayer();
         World worldIn = evt.getWorld();
         BlockPos pos = evt.getPos();
@@ -289,7 +288,7 @@ public class ThutCrafts
         }
         else
         {
-            itemstack.setTagCompound(new NBTTagCompound());
+            if (!itemstack.hasTagCompound()) itemstack.setTagCompound(new NBTTagCompound());
             NBTTagCompound min = new NBTTagCompound();
             Vector3.getNewVector().set(pos).writeToNBT(min, "");
             itemstack.getTagCompound().setTag("min", min);
@@ -298,6 +297,14 @@ public class ThutCrafts
             evt.setCanceled(true);
             itemstack.getTagCompound().setLong("time", worldIn.getWorldTime());
         }
+    }
 
+    @SubscribeEvent
+    public void logout(PlayerLoggedOutEvent event)
+    {
+        if (event.player.isRiding() && event.player.getLowestRidingEntity() instanceof EntityCraft)
+        {
+            event.player.dismountRidingEntity();
+        }
     }
 }

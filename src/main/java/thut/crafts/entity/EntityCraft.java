@@ -12,6 +12,9 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -19,6 +22,7 @@ import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializer;
@@ -42,6 +46,7 @@ import thut.api.entity.blockentity.BlockEntityUpdater;
 import thut.api.entity.blockentity.BlockEntityWorld;
 import thut.api.entity.blockentity.IBlockEntity;
 import thut.api.maths.Vector3;
+import thut.api.network.PacketHandler;
 
 public class EntityCraft extends EntityLivingBase
         implements IEntityAdditionalSpawnData, IBlockEntity, IMultiplePassengerEntity
@@ -72,46 +77,49 @@ public class EntityCraft extends EntityLivingBase
             buf.writeLong(entityId.getMostSignificantBits());
             buf.writeLong(entityId.getLeastSignificantBits());
         }
+
+        public void writeToNBT(NBTTagCompound tag)
+        {
+            PacketBuffer buffer = new PacketBuffer(Unpooled.buffer(8));
+            writeToBuf(buffer);
+            tag.setByteArray("v", buffer.array());
+        }
+
+        public static Seat readFromNBT(NBTTagCompound tag)
+        {
+            byte[] arr = tag.getByteArray("v");
+            PacketBuffer buf = new PacketBuffer(Unpooled.copiedBuffer(arr));
+            return new Seat(buf);
+        }
     }
 
-    public static final DataSerializer<Seat> SEATSERIALIZER     = new DataSerializer<Seat>()
+    public static final DataSerializer<Seat> SEATSERIALIZER = new DataSerializer<Seat>()
+                                                            {
+                                                                @Override
+                                                                public void write(PacketBuffer buf, Seat value)
                                                                 {
-                                                                    @Override
-                                                                    public void write(PacketBuffer buf, Seat value)
-                                                                    {
-                                                                        value.writeToBuf(buf);
-                                                                    }
+                                                                    value.writeToBuf(buf);
+                                                                }
 
-                                                                    @Override
-                                                                    public Seat read(PacketBuffer buf)
-                                                                            throws IOException
-                                                                    {
-                                                                        return new Seat(buf);
-                                                                    }
+                                                                @Override
+                                                                public Seat read(PacketBuffer buf) throws IOException
+                                                                {
+                                                                    return new Seat(buf);
+                                                                }
 
-                                                                    @Override
-                                                                    public DataParameter<Seat> createKey(int id)
-                                                                    {
-                                                                        return new DataParameter<>(id, this);
-                                                                    }
-                                                                };
+                                                                @Override
+                                                                public DataParameter<Seat> createKey(int id)
+                                                                {
+                                                                    return new DataParameter<>(id, this);
+                                                                }
+                                                            };
 
     @SuppressWarnings("unchecked")
-    static final DataParameter<Seat>[]       SEAT               = new DataParameter[10];
-    static final DataParameter<Integer>      SEATCOUNT          = EntityDataManager
-            .<Integer> createKey(EntityCraft.class, DataSerializers.VARINT);
-    static final DataParameter<Integer>      DESTINATIONFLOORDW = EntityDataManager
-            .<Integer> createKey(EntityCraft.class, DataSerializers.VARINT);
-    static final DataParameter<Float>        DESTINATIONYDW     = EntityDataManager.<Float> createKey(EntityCraft.class,
-            DataSerializers.FLOAT);
-    static final DataParameter<Float>        DESTINATIONXDW     = EntityDataManager.<Float> createKey(EntityCraft.class,
-            DataSerializers.FLOAT);
-    static final DataParameter<Float>        DESTINATIONZDW     = EntityDataManager.<Float> createKey(EntityCraft.class,
-            DataSerializers.FLOAT);
-    static final DataParameter<Integer>      MAINSEATDW         = EntityDataManager
-            .<Integer> createKey(EntityCraft.class, DataSerializers.VARINT);
-    static final DataParameter<Boolean>      CALLEDDW           = EntityDataManager
-            .<Boolean> createKey(EntityCraft.class, DataSerializers.BOOLEAN);
+    static final DataParameter<Seat>[]       SEAT           = new DataParameter[10];
+    static final DataParameter<Integer>      SEATCOUNT      = EntityDataManager.<Integer> createKey(EntityCraft.class,
+            DataSerializers.VARINT);
+    static final DataParameter<Integer>      MAINSEATDW     = EntityDataManager.<Integer> createKey(EntityCraft.class,
+            DataSerializers.VARINT);
 
     static
     {
@@ -148,7 +156,7 @@ public class EntityCraft extends EntityLivingBase
     public UUID                id                = null;
     public UUID                owner;
     public List<AxisAlignedBB> blockBoxes        = Lists.newArrayList();
-    public ItemStack[][][]     blocks            = null;
+    public IBlockState[][][]   blocks            = null;
     public TileEntity[][][]    tiles             = null;
     BlockEntityUpdater         collider;
     CraftInteractHandler       interacter;
@@ -196,7 +204,6 @@ public class EntityCraft extends EntityLivingBase
             this.dataManager.set(SEAT[index], toSet);
             this.dataManager.setDirty(SEAT[index]);
         }
-        System.out.println(id + " " + old);
     }
 
     Seat getSeat(int index)
@@ -475,18 +482,18 @@ public class EntityCraft extends EntityLivingBase
 
     private boolean consumePower()
     {
-        if (!ENERGYUSE || !getCalled()) return true;
+        if (!ENERGYUSE) return true;
         boolean power = false;
         Vector3 bounds = Vector3.getNewVector().set(boundMax.subtract(boundMin));
         double volume = bounds.x * bounds.y * bounds.z;
-        double energyCost = Math.abs(getDestY() - posY) * ENERGYCOST * volume * 0.01;
+        float speed = 10;
+        double energyCost = Math.abs(speed) * ENERGYCOST * volume * 0.01;
         energyCost = Math.max(energyCost, 1);
         power = (energy = (int) (energy - energyCost)) > 0;
         if (energy < 0) energy = 0;
         MinecraftForge.EVENT_BUS.post(new EventCraftConsumePower(this, (long) energyCost));
         if (!power)
         {
-            this.setDestY((float) posY);
             toMoveY = false;
         }
         return power;
@@ -526,12 +533,7 @@ public class EntityCraft extends EntityLivingBase
     protected void entityInit()
     {
         super.entityInit();
-        this.dataManager.register(DESTINATIONFLOORDW, Integer.valueOf(0));
-        this.dataManager.register(DESTINATIONYDW, Float.valueOf(0));
-        this.dataManager.register(DESTINATIONXDW, Float.valueOf(0));
-        this.dataManager.register(DESTINATIONZDW, Float.valueOf(0));
         this.dataManager.register(MAINSEATDW, Integer.valueOf(-1));
-        this.dataManager.register(CALLEDDW, Boolean.FALSE);
         for (int i = 0; i < 10; i++)
             dataManager.register(SEAT[i], new Seat(new Vector3f(), null));
         dataManager.register(SEATCOUNT, 0);
@@ -550,18 +552,6 @@ public class EntityCraft extends EntityLivingBase
         return false;
     }
 
-    @Deprecated
-    private boolean getCalled()
-    {
-        return dataManager.get(CALLEDDW);
-    }
-
-    @Deprecated
-    private void setCalled(boolean called)
-    {
-        dataManager.set(CALLEDDW, called);
-    }
-
     /** @return the destinationFloor */
     public int getMainSeat()
     {
@@ -572,30 +562,6 @@ public class EntityCraft extends EntityLivingBase
     public void setMainSeat(int seat)
     {
         dataManager.set(MAINSEATDW, seat);
-    }
-
-    /** @return the destinationFloor */
-    public int getDestinationFloor()
-    {
-        return dataManager.get(DESTINATIONFLOORDW);
-    }
-
-    /** @return the destinationFloor */
-    public float getDestX()
-    {
-        return dataManager.get(DESTINATIONXDW);
-    }
-
-    /** @return the destinationFloor */
-    public float getDestY()
-    {
-        return dataManager.get(DESTINATIONYDW);
-    }
-
-    /** @return the destinationFloor */
-    public float getDestZ()
-    {
-        return dataManager.get(DESTINATIONZDW);
     }
 
     @Override
@@ -647,9 +613,14 @@ public class EntityCraft extends EntityLivingBase
         }
         else if (dx == dy && dy == dz && dz == 0 && !worldObj.isRemote)
         {
-            setCalled(false);
             BlockPos pos = getPosition();
+            boolean update = posX != pos.getX() + 0.5 || posY != Math.round(posY) || posZ != pos.getZ() + 0.5;
             setPosition(pos.getX() + 0.5, Math.round(posY), pos.getZ() + 0.5);
+            if (update)
+            {
+                System.out.println("updatePacket");
+                PacketHandler.sendEntityUpdate(this);
+            }
         }
         this.rotationYaw = 0;
         checkCollision();
@@ -670,6 +641,7 @@ public class EntityCraft extends EntityLivingBase
         }
     }
 
+    @SuppressWarnings("deprecation")
     public void readBlocks(NBTTagCompound nbt)
     {
         if (nbt.hasKey("Blocks"))
@@ -683,8 +655,8 @@ public class EntityCraft extends EntityLivingBase
                 sizeX = sizeZ = nbt.getInteger("BlocksLength");
             }
             if (sizeY == 0) sizeY = 1;
-
-            blocks = new ItemStack[sizeX][sizeY][sizeZ];
+            int version = blockTag.getInteger("v");
+            blocks = new IBlockState[sizeX][sizeY][sizeZ];
             tiles = new TileEntity[sizeX][sizeY][sizeZ];
             for (int i = 0; i < sizeX; i++)
                 for (int k = 0; k < sizeY; k++)
@@ -700,9 +672,20 @@ public class EntityCraft extends EntityLivingBase
                             n = blockTag.getInteger("I" + i + "," + k + "," + j);
                         }
                         if (n == -1) continue;
-                        ItemStack b = new ItemStack(Item.getItemById(n), 1,
-                                blockTag.getInteger("M" + i + "," + k + "," + j));
-                        blocks[i][k][j] = b;
+                        IBlockState state;
+                        if (version == 0)
+                        {
+                            Block b = Block.getBlockFromItem(Item.getItemById(n));
+                            int meta = blockTag.getInteger("M" + i + "," + k + "," + j);
+                            state = b.getStateFromMeta(meta);
+                        }
+                        else
+                        {
+                            Block b = Block.getBlockById(n);
+                            int meta = blockTag.getInteger("M" + i + "," + k + "," + j);
+                            state = b.getStateFromMeta(meta);
+                        }
+                        blocks[i][k][j] = state;
                         if (blockTag.hasKey("T" + i + "," + k + "," + j))
                         {
                             try
@@ -734,11 +717,21 @@ public class EntityCraft extends EntityLivingBase
 
         if (nbt.hasKey("higher")) id = new UUID(nbt.getLong("higher"), nbt.getLong("lower"));
         if (nbt.hasKey("ownerhigher")) owner = new UUID(nbt.getLong("ownerhigher"), nbt.getLong("ownerlower"));
-
         if (nbt.hasKey("replacement"))
         {
             NBTTagCompound held = nbt.getCompoundTag("replacement");
             setHeldItem(null, ItemStack.loadItemStackFromNBT(held));
+        }
+        if (nbt.hasKey("seats"))
+        {
+            NBTTagList seatsList = nbt.getTagList("seats", 10);
+            for (int i = 0; i < seatsList.tagCount(); ++i)
+            {
+                NBTTagCompound nbt1 = seatsList.getCompoundTagAt(i);
+                Seat seat = Seat.readFromNBT(nbt1);
+                this.getSeat(i).seat = seat.seat;
+                this.getSeat(i).entityId = seat.entityId;
+            }
         }
         readBlocks(nbt);
     }
@@ -777,36 +770,6 @@ public class EntityCraft extends EntityLivingBase
         if (collider != null) collider.onSetPosition();
     }
 
-    /** @param dest
-     *            the destinationFloor to set */
-    public void setDestX(float dest)
-    {
-        dataManager.set(DESTINATIONXDW, Float.valueOf(dest));
-        dataManager.set(DESTINATIONYDW, Float.valueOf((float) posY));
-        dataManager.set(DESTINATIONZDW, Float.valueOf((float) posZ));
-        setCalled(true);
-    }
-
-    /** @param dest
-     *            the destinationFloor to set */
-    public void setDestY(float dest)
-    {
-        dataManager.set(DESTINATIONYDW, Float.valueOf(dest));
-        dataManager.set(DESTINATIONXDW, Float.valueOf((float) posX));
-        dataManager.set(DESTINATIONZDW, Float.valueOf((float) posZ));
-        setCalled(true);
-    }
-
-    /** @param dest
-     *            the destinationFloor to set */
-    public void setDestZ(float dest)
-    {
-        dataManager.set(DESTINATIONZDW, Float.valueOf(dest));
-        dataManager.set(DESTINATIONYDW, Float.valueOf((float) posY));
-        dataManager.set(DESTINATIONXDW, Float.valueOf((float) posX));
-        setCalled(true);
-    }
-
     public void writeBlocks(NBTTagCompound nbt)
     {
         if (blocks != null)
@@ -815,6 +778,7 @@ public class EntityCraft extends EntityLivingBase
             blocksTag.setInteger("BlocksLengthX", blocks.length);
             blocksTag.setInteger("BlocksLengthY", blocks[0].length);
             blocksTag.setInteger("BlocksLengthZ", blocks[0][0].length);
+            blocksTag.setInteger("v", 1);
             int sizeX = blocks.length;
             int sizeY = blocks[0].length;
             int sizeZ = blocks[0][0].length;
@@ -824,10 +788,10 @@ public class EntityCraft extends EntityLivingBase
                 {
                     for (int j = 0; j < sizeZ; j++)
                     {
-                        ItemStack b = blocks[i][k][j];
-                        if (b == null || b.getItem() == null) continue;
-                        blocksTag.setInteger("I" + i + "," + k + "," + j, Item.getIdFromItem(b.getItem()));
-                        blocksTag.setInteger("M" + i + "," + k + "," + j, b.getItemDamage());
+                        IBlockState b = blocks[i][k][j];
+                        if (b == null) continue;
+                        blocksTag.setInteger("I" + i + "," + k + "," + j, Block.getIdFromBlock(b.getBlock()));
+                        blocksTag.setInteger("M" + i + "," + k + "," + j, b.getBlock().getMetaFromState(b));
                         try
                         {
                             if (tiles[i][k][j] != null)
@@ -875,6 +839,14 @@ public class EntityCraft extends EntityLivingBase
             getHeldItem(null).writeToNBT(held);
             nbt.setTag("replacement", held);
         }
+        NBTTagList seats = new NBTTagList();
+        for (int i = 0; i < getSeatCount(); i++)
+        {
+            NBTTagCompound tag1 = new NBTTagCompound();
+            getSeat(i).writeToNBT(tag1);
+            seats.appendTag(tag1);
+        }
+        nbt.setTag("seats", seats);
         try
         {
             writeBlocks(nbt);
@@ -930,13 +902,13 @@ public class EntityCraft extends EntityLivingBase
     }
 
     @Override
-    public void setBlocks(ItemStack[][][] blocks)
+    public void setBlocks(IBlockState[][][] blocks)
     {
         this.blocks = blocks;
     }
 
     @Override
-    public ItemStack[][][] getBlocks()
+    public IBlockState[][][] getBlocks()
     {
         return blocks;
     }
