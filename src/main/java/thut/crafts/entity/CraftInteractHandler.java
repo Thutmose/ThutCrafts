@@ -10,6 +10,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
@@ -18,6 +19,7 @@ import net.minecraft.util.math.BlockPos.MutableBlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.RayTraceResult.Type;
 import net.minecraft.util.math.Vec3d;
+import thut.api.entity.blockentity.BlockEntityUpdater;
 import thut.api.entity.blockentity.IBlockEntity;
 import thut.crafts.entity.EntityCraft.Seat;
 import thut.crafts.network.PacketPipeline;
@@ -58,8 +60,10 @@ public class CraftInteractHandler
             side = trace.sideHit;
         }
         IBlockState state = craft.getFakeWorld().getBlockState(pos);
-        boolean activate = state.getBlock().onBlockActivated(craft.getFakeWorld(), pos, state, player, hand, stack,
-                side, hitX, hitY, hitZ);
+        TileEntity tile = craft.getFakeWorld().getTileEntity(pos);
+        boolean blacklist = tile != null && !BlockEntityUpdater.isWhitelisted(tile);
+        boolean activate = blacklist || state.getBlock().onBlockActivated(craft.getFakeWorld(), pos, state, player,
+                hand, stack, side, hitX, hitY, hitZ);
         if (activate) return EnumActionResult.SUCCESS;
         else if (trace == null || !state.getMaterial().isSolid())
         {
@@ -74,7 +78,6 @@ public class CraftInteractHandler
                 hitZ = (float) (result.hitVec.zCoord - pos.getZ());
                 activate = state.getBlock().onBlockActivated(craft.getEntityWorld(), pos, state, player, hand, stack,
                         result.sideHit, hitX, hitY, hitZ);
-                System.out.println(pos);
                 if (activate && craft.worldObj.isRemote)
                 {
                     PacketBuffer buffer = new PacketBuffer(Unpooled.buffer(25));
@@ -123,7 +126,7 @@ public class CraftInteractHandler
                 BlockPos pos1 = new BlockPos(seatPos.x, seatPos.y, seatPos.z);
                 if (pos1.equals(pos))
                 {
-                    if (!craft.worldObj.isRemote)
+                    if (!craft.worldObj.isRemote && !seat.entityId.equals(player.getUniqueID()))
                     {
                         craft.setSeatID(i, player.getUniqueID());
                         player.startRiding(craft);

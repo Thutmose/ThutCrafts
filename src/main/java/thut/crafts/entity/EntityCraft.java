@@ -14,6 +14,7 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockStairs;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -264,24 +265,73 @@ public class EntityCraft extends EntityLivingBase
         {
             toMoveY = toMoveX = toMoveZ = false;
         }
+        toMoveX = controller.leftInputDown || controller.rightInputDown;
+        toMoveZ = controller.backInputDown || controller.forwardInputDown;
+        toMoveY = controller.upInputDown || controller.downInputDown;
+        float destY = (float) (toMoveY ? (controller.upInputDown ? 30 : -30) : 0);
+        float destX = (float) (toMoveX ? (controller.leftInputDown ? 30 : -30) : 0);
+        float destZ = (float) (toMoveZ ? (controller.forwardInputDown ? 30 : -30) : 0);
+        toMoveY = toMoveX = toMoveZ = false;
+        Vector3 dest = Vector3.getNewVector().set(destX, destY, destZ);
+        Seat seat = null;
+        for (int i = 0; i < getSeatCount(); i++)
+        {
+            if (!getSeat(i).entityId.equals(Seat.BLANK))
+            {
+                seat = getSeat(i);
+                break;
+            }
+        }
+        if (seat != null)
+        {
+            Vector3 rel = Vector3.getNewVector().set(this).addTo(seat.seat.x, seat.seat.y, seat.seat.z);
+            BlockPos pos = rel.getPos();
+            IBlockState block = world.getBlockState(pos);
+            switch (block.getValue(BlockStairs.FACING))
+            {
+            case DOWN:
+                break;
+            case EAST:
+                dest = dest.rotateAboutAngles(0, -Math.PI / 2, Vector3.getNewVector(), Vector3.getNewVector());
+                break;
+            case NORTH:
+                break;
+            case SOUTH:
+                dest = dest.rotateAboutAngles(0, Math.PI, Vector3.getNewVector(), Vector3.getNewVector());
+                break;
+            case UP:
+                break;
+            case WEST:
+                dest = dest.rotateAboutAngles(0, Math.PI / 2, Vector3.getNewVector(), Vector3.getNewVector());
+                break;
+            default:
+                break;
+
+            }
+            toMoveY = (int) ((destY = (float) dest.y)) != 0;
+            toMoveZ = (int) ((destZ = (float) dest.z)) != 0;
+            toMoveX = (int) ((destX = (float) dest.x)) != 0;
+            destY += posY;
+            destX += posX;
+            destZ += posZ;
+        }
+
         if (!toMoveX) motionX *= 0.5;
         if (!toMoveZ) motionZ *= 0.5;
         if (!toMoveY) motionY *= 0.5;
+
         if (toMoveY)
         {
-            float destY = (float) (controller.upInputDown ? posY + 30 : posY - 30);
             double dy = getSpeed(posY, destY, motionY, speedUp, speedDown);
             motionY = dy;
         }
         if (toMoveX)
         {
-            float destX = (float) (controller.leftInputDown ? posX + 30 : posX - 30);
             double dx = getSpeed(posX, destX, motionX, speedHoriz, speedHoriz);
             motionX = dx;
         }
         if (toMoveZ)
         {
-            float destZ = (float) (controller.forwardInputDown ? posZ + 30 : posZ - 30);
             double dz = getSpeed(posZ, destZ, motionZ, speedHoriz, speedHoriz);
             motionZ = dz;
         }
@@ -570,7 +620,16 @@ public class EntityCraft extends EntityLivingBase
             EnumHand hand)
     {
         if (interacter == null) interacter = new CraftInteractHandler(this);
-        return interacter.applyPlayerInteraction(player, vec, stack, hand);
+        try
+        {
+            return interacter.applyPlayerInteraction(player, vec, stack, hand);
+        }
+        catch (Exception e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return super.applyPlayerInteraction(player, vec, stack, hand);
+        }
     }
 
     /** First layer of player interaction */
@@ -600,13 +659,10 @@ public class EntityCraft extends EntityLivingBase
         this.prevPosX = this.posX;
         this.prevPosZ = this.posZ;
         collider.onUpdate();
+        accelerate();
         int dy = (int) ((motionY) * 16);
         int dx = (int) ((motionX) * 16);
         int dz = (int) ((motionZ) * 16);
-        toMoveX = controller.leftInputDown || controller.rightInputDown;
-        toMoveZ = controller.backInputDown || controller.forwardInputDown;
-        toMoveY = controller.upInputDown || controller.downInputDown;
-        accelerate();
         if (toMoveY || toMoveX || toMoveZ)
         {
             doMotion();
