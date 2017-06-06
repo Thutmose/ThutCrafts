@@ -113,7 +113,7 @@ public class PacketPipeline
                     {
                         IBlockState state = player1.worldObj.getBlockState(pos);
                         state.getBlock().onBlockActivated(player1.worldObj, pos, state, player1, EnumHand.MAIN_HAND,
-                                player1.getHeldItemMainhand(), side, hit.x, hit.y, hit.z);
+                                side, hit.x, hit.y, hit.z);
                     }
                 });
             }

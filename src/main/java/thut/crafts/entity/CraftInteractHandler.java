@@ -33,7 +33,7 @@ public class CraftInteractHandler
         this.craft = lift;
     }
 
-    public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec, @Nullable ItemStack stack,
+    public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec,
             EnumHand hand)
     {
         if (player.isSneaking()) return EnumActionResult.PASS;
@@ -63,7 +63,7 @@ public class CraftInteractHandler
         TileEntity tile = craft.getFakeWorld().getTileEntity(pos);
         boolean blacklist = tile != null && !BlockEntityUpdater.isWhitelisted(tile);
         boolean activate = blacklist || state.getBlock().onBlockActivated(craft.getFakeWorld(), pos, state, player,
-                hand, stack, side, hitX, hitY, hitZ);
+                hand, side, hitX, hitY, hitZ);
         if (activate) return EnumActionResult.SUCCESS;
         else if (trace == null || !state.getMaterial().isSolid())
         {
@@ -76,8 +76,7 @@ public class CraftInteractHandler
                 hitX = (float) (result.hitVec.xCoord - pos.getX());
                 hitY = (float) (result.hitVec.yCoord - pos.getY());
                 hitZ = (float) (result.hitVec.zCoord - pos.getZ());
-                activate = state.getBlock().onBlockActivated(craft.getEntityWorld(), pos, state, player, hand, stack,
-                        result.sideHit, hitX, hitY, hitZ);
+                activate = state.getBlock().onBlockActivated(craft.getEntityWorld(), pos, state, player, hand, result.sideHit, hitX, hitY, hitZ);
                 if (activate && craft.worldObj.isRemote)
                 {
                     PacketBuffer buffer = new PacketBuffer(Unpooled.buffer(25));

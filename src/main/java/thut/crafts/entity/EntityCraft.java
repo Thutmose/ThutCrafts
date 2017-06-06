@@ -18,6 +18,7 @@ import net.minecraft.block.BlockStairs;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.MoverType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
@@ -48,6 +49,7 @@ import thut.api.entity.blockentity.BlockEntityWorld;
 import thut.api.entity.blockentity.IBlockEntity;
 import thut.api.maths.Vector3;
 import thut.api.network.PacketHandler;
+import thut.lib.CompatWrapper;
 
 public class EntityCraft extends EntityLivingBase
         implements IEntityAdditionalSpawnData, IBlockEntity, IMultiplePassengerEntity
@@ -561,7 +563,7 @@ public class EntityCraft extends EntityLivingBase
 
     public void doMotion()
     {
-        this.moveEntity(motionX, motionY, motionZ);
+        this.moveEntity(MoverType.SELF, motionX, motionY, motionZ);
     }
 
     @Override
@@ -616,27 +618,26 @@ public class EntityCraft extends EntityLivingBase
 
     @Override
     /** Applies the given player interaction to this Entity. */
-    public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec, @Nullable ItemStack stack,
-            EnumHand hand)
+    public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec, EnumHand hand)
     {
         if (interacter == null) interacter = new CraftInteractHandler(this);
         try
         {
-            return interacter.applyPlayerInteraction(player, vec, stack, hand);
+            return interacter.applyPlayerInteraction(player, vec, hand);
         }
         catch (Exception e)
         {
             // TODO Auto-generated catch block
             e.printStackTrace();
-            return super.applyPlayerInteraction(player, vec, stack, hand);
+            return super.applyPlayerInteraction(player, vec, hand);
         }
     }
 
     /** First layer of player interaction */
     @Override
-    public boolean processInitialInteract(EntityPlayer player, @Nullable ItemStack stack, EnumHand hand)
+    public boolean processInitialInteract(EntityPlayer player, EnumHand hand)
     {
-        return interacter.processInitialInteract(player, stack, hand);
+        return interacter.processInitialInteract(player, player.getHeldItem(hand), hand);
     }
 
     @Override
@@ -776,7 +777,7 @@ public class EntityCraft extends EntityLivingBase
         if (nbt.hasKey("replacement"))
         {
             NBTTagCompound held = nbt.getCompoundTag("replacement");
-            setHeldItem(null, ItemStack.loadItemStackFromNBT(held));
+            setHeldItem(EnumHand.MAIN_HAND, CompatWrapper.fromTag(held));
         }
         if (nbt.hasKey("seats"))
         {
@@ -889,7 +890,7 @@ public class EntityCraft extends EntityLivingBase
             nbt.setLong("ownerlower", owner.getLeastSignificantBits());
             nbt.setLong("ownerhigher", owner.getMostSignificantBits());
         }
-        if (getHeldItem(null) != null)
+        if (getHeldItem(null) != CompatWrapper.nullStack)
         {
             NBTTagCompound held = new NBTTagCompound();
             getHeldItem(null).writeToNBT(held);
@@ -931,7 +932,7 @@ public class EntityCraft extends EntityLivingBase
     @Override
     public ItemStack getItemStackFromSlot(EntityEquipmentSlot slotIn)
     {
-        return null;
+        return CompatWrapper.nullStack;
     }
 
     @Override
@@ -942,7 +943,7 @@ public class EntityCraft extends EntityLivingBase
     @Override
     public ItemStack getHeldItem(EnumHand hand)
     {
-        return null;
+        return CompatWrapper.nullStack;
     }
 
     @Override
