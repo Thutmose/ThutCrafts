@@ -52,14 +52,15 @@ import thut.crafts.network.PacketPipeline.ClientPacket.MessageHandlerClient;
 import thut.crafts.network.PacketPipeline.ServerPacket;
 import thut.crafts.network.PacketPipeline.ServerPacket.MessageHandlerServer;
 
-@Mod(modid = Reference.MODID, name = "ThutCrafts", dependencies = "required-after:thutcore", version = Reference.VERSION)
+@Mod(modid = Reference.MODID, name = "ThutCrafts", dependencies = "required-after:thutcore", version = Reference.VERSION, acceptedMinecraftVersions = Reference.MCVERSIONS)
 public class ThutCrafts
 {
     @EventHandler
     public void preInit(FMLPreInitializationEvent event)
     {
         MinecraftForge.EVENT_BUS.register(this);
-        EntityRegistry.registerModEntity(new ResourceLocation("thutcrafts:craft"), EntityCraft.class, "craft", 1, this, 32, 1, true);
+        EntityRegistry.registerModEntity(new ResourceLocation("thutcrafts:craft"), EntityCraft.class, "craft", 1, this,
+                32, 1, true);
         DataSerializers.registerSerializer(EntityCraft.SEATSERIALIZER);
         PacketPipeline.packetPipeline = NetworkRegistry.INSTANCE.newSimpleChannel(Reference.MODID);
         PacketPipeline.packetPipeline.registerMessage(MessageHandlerClient.class, ClientPacket.class, 0, Side.CLIENT);
