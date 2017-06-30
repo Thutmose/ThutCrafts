@@ -115,6 +115,12 @@ public class EntityCraft extends EntityLivingBase
                                                                 {
                                                                     return new DataParameter<>(id, this);
                                                                 }
+
+                                                                @Override
+                                                                public Seat copyValue(Seat value)
+                                                                {
+                                                                    return new Seat((Vector3f) value.seat.clone(), value.entityId);
+                                                                }
                                                             };
 
     @SuppressWarnings("unchecked")
@@ -142,7 +148,7 @@ public class EntityCraft extends EntityLivingBase
 
     public CraftController     controller        = new CraftController(this);
     int                        energy            = 0;
-    private BlockEntityWorld   world;
+    private BlockEntityWorld   fake_world;
     public double              speedUp           = 0.5;
     public double              speedDown         = -0.5;
     public double              speedHoriz        = 0.5;
@@ -174,11 +180,11 @@ public class EntityCraft extends EntityLivingBase
 
     public BlockEntityWorld getFakeWorld()
     {
-        if (world == null)
+        if (fake_world == null)
         {
-            world = new BlockEntityWorld(this, worldObj);
+            fake_world = new BlockEntityWorld(this, world);
         }
-        return world;
+        return fake_world;
     }
 
     public EntityCraft(World world, double x, double y, double z)
@@ -288,7 +294,7 @@ public class EntityCraft extends EntityLivingBase
         {
             Vector3 rel = Vector3.getNewVector().set(this).addTo(seat.seat.x, seat.seat.y, seat.seat.z);
             BlockPos pos = rel.getPos();
-            IBlockState block = world.getBlockState(pos);
+            IBlockState block = fake_world.getBlockState(pos);
             switch (block.getValue(BlockStairs.FACING))
             {
             case DOWN:
@@ -362,7 +368,7 @@ public class EntityCraft extends EntityLivingBase
     protected void removePassenger(Entity passenger)
     {
         super.removePassenger(passenger);
-        if (!worldObj.isRemote) for (int i = 0; i < getSeatCount(); i++)
+        if (!world.isRemote) for (int i = 0; i < getSeatCount(); i++)
         {
             if (getSeat(i).entityId.equals(passenger.getUniqueID()))
             {
@@ -518,8 +524,8 @@ public class EntityCraft extends EntityLivingBase
         int xMax = boundMax.getX();
         int zMax = boundMax.getZ();
 
-        List<?> list = this.worldObj.getEntitiesWithinAABBExcludingEntity(this, new AxisAlignedBB(posX + (xMin - 1),
-                posY, posZ + (zMin - 1), posX + xMax + 1, posY + 64, posZ + zMax + 1));
+        List<?> list = this.world.getEntitiesWithinAABBExcludingEntity(this, new AxisAlignedBB(posX + (xMin - 1), posY,
+                posZ + (zMin - 1), posX + xMax + 1, posY + 64, posZ + zMax + 1));
         if (list != null && !list.isEmpty())
         {
             if (list.size() == 1 && this.getRecursivePassengers() != null
@@ -563,7 +569,7 @@ public class EntityCraft extends EntityLivingBase
 
     public void doMotion()
     {
-        this.moveEntity(MoverType.SELF, motionX, motionY, motionZ);
+        this.move(MoverType.SELF, motionX, motionY, motionZ);
     }
 
     @Override
@@ -655,7 +661,7 @@ public class EntityCraft extends EntityLivingBase
             this.collider = new BlockEntityUpdater(this);
             this.collider.onSetPosition();
         }
-        controller.doServerTick(world);
+        controller.doServerTick(fake_world);
         this.prevPosY = this.posY;
         this.prevPosX = this.posX;
         this.prevPosZ = this.posZ;
@@ -668,7 +674,7 @@ public class EntityCraft extends EntityLivingBase
         {
             doMotion();
         }
-        else if (dx == dy && dy == dz && dz == 0 && !worldObj.isRemote)
+        else if (dx == dy && dy == dz && dz == 0 && !world.isRemote)
         {
             BlockPos pos = getPosition();
             boolean update = posX != pos.getX() + 0.5 || posY != Math.round(posY) || posZ != pos.getZ() + 0.5;
@@ -687,7 +693,7 @@ public class EntityCraft extends EntityLivingBase
 
     public void passengerCheck()
     {
-        List<Entity> list = worldObj.getEntitiesWithinAABBExcludingEntity(this, getEntityBoundingBox());
+        List<Entity> list = world.getEntitiesWithinAABBExcludingEntity(this, getEntityBoundingBox());
         if (list.size() > 0)
         {
             hasPassenger = true;
@@ -800,7 +806,7 @@ public class EntityCraft extends EntityLivingBase
         NBTTagCompound tag = new NBTTagCompound();
         try
         {
-            tag = buff.readNBTTagCompoundFromBuffer();
+            tag = buff.readCompoundTag();
             readEntityFromNBT(tag);
         }
         catch (Exception e)
@@ -813,7 +819,7 @@ public class EntityCraft extends EntityLivingBase
     @Override
     public void setDead()
     {
-        if (!worldObj.isRemote && !this.isDead)
+        if (!world.isRemote && !this.isDead)
         {
             IBlockEntity.BlockEntityFormer.RevertEntity(this);
         }
@@ -920,7 +926,7 @@ public class EntityCraft extends EntityLivingBase
         PacketBuffer buff = new PacketBuffer(data);
         NBTTagCompound tag = new NBTTagCompound();
         writeEntityToNBT(tag);
-        buff.writeNBTTagCompoundToBuffer(tag);
+        buff.writeCompoundTag(tag);
     }
 
     @Override
@@ -1009,7 +1015,7 @@ public class EntityCraft extends EntityLivingBase
     @Override
     public void setFakeWorld(BlockEntityWorld world)
     {
-        this.world = world;
+        this.fake_world = world;
     }
 
     public static EntityCraft getLiftFromUUID(final UUID liftID, World world)

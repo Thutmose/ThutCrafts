@@ -73,7 +73,7 @@ public class PacketCraftControl implements IMessage, IMessageHandler<PacketCraft
         EntityPlayer player = null;
         if (ctx.side == Side.SERVER)
         {
-            player = ctx.getServerHandler().playerEntity;
+            player = ctx.getServerHandler().player;
         }
         Entity mob = player.getEntityWorld().getEntityByID(message.entityId);
         if (mob != null && mob instanceof EntityCraft)

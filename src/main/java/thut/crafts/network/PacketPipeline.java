@@ -59,7 +59,7 @@ public class PacketPipeline
         {
             this.buffer = new PacketBuffer(Unpooled.buffer());
             buffer.writeByte(channel);
-            buffer.writeNBTTagCompoundToBuffer(nbt);
+            buffer.writeCompoundTag(nbt);
         }
 
         public ClientPacket(byte[] data)
@@ -111,8 +111,8 @@ public class PacketPipeline
                     @Override
                     public void run()
                     {
-                        IBlockState state = player1.worldObj.getBlockState(pos);
-                        state.getBlock().onBlockActivated(player1.worldObj, pos, state, player1, EnumHand.MAIN_HAND,
+                        IBlockState state = player1.world.getBlockState(pos);
+                        state.getBlock().onBlockActivated(player1.world, pos, state, player1, EnumHand.MAIN_HAND,
                                 side, hit.x, hit.y, hit.z);
                     }
                 });
@@ -121,7 +121,7 @@ public class PacketPipeline
             @Override
             public ServerPacket onMessage(ServerPacket message, MessageContext ctx)
             {
-                EntityPlayer player = ctx.getServerHandler().playerEntity;
+                EntityPlayer player = ctx.getServerHandler().player;
                 handleServerSide(player, message.buffer);
 
                 return null;
@@ -138,7 +138,7 @@ public class PacketPipeline
         {
             this.buffer = new PacketBuffer(Unpooled.buffer());
             buffer.writeByte(channel);
-            buffer.writeNBTTagCompoundToBuffer(nbt);
+            buffer.writeCompoundTag(nbt);
         }
 
         public ServerPacket(byte[] data)
@@ -209,7 +209,7 @@ public class PacketPipeline
     {
         PacketBuffer packetData = new PacketBuffer(Unpooled.buffer());
         packetData.writeByte(channel);
-        packetData.writeNBTTagCompoundToBuffer(nbt);
+        packetData.writeCompoundTag(nbt);
 
         return new ClientPacket(packetData);
     }
@@ -218,7 +218,7 @@ public class PacketPipeline
     {
         PacketBuffer packetData = new PacketBuffer(Unpooled.buffer());
         packetData.writeByte(channel);
-        packetData.writeNBTTagCompoundToBuffer(nbt);
+        packetData.writeCompoundTag(nbt);
 
         return new ServerPacket(packetData);
     }

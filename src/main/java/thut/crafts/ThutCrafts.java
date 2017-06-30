@@ -4,9 +4,9 @@ import org.lwjgl.input.Keyboard;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.VertexBuffer;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -76,7 +76,7 @@ public class ThutCrafts
     @SubscribeEvent
     public void clientTick(TickEvent.PlayerTickEvent event)
     {
-        if (event.phase == Phase.START || event.player != Minecraft.getMinecraft().thePlayer) return;
+        if (event.phase == Phase.START || event.player != Minecraft.getMinecraft().player) return;
         control:
         if (event.player.isRiding() && Minecraft.getMinecraft().currentScreen == null)
         {
@@ -127,7 +127,7 @@ public class ThutCrafts
         {
             BlockPos pos = event.getTarget().getBlockPos();
             if (pos == null) return;
-            if (!player.worldObj.getBlockState(pos).getMaterial().isSolid())
+            if (!player.world.getBlockState(pos).getMaterial().isSolid())
             {
                 Vec3d loc = player.getPositionVector().addVector(0, player.getEyeHeight(), 0)
                         .add(player.getLookVec().scale(2));
@@ -157,7 +157,7 @@ public class ThutCrafts
                 GlStateManager.depthMask(false);
                 GlStateManager.color(1.0F, 0.0F, 0.0F, 1F);
                 Tessellator tessellator = Tessellator.getInstance();
-                VertexBuffer vertexbuffer = tessellator.getBuffer();
+                BufferBuilder vertexbuffer = tessellator.getBuffer();
                 vertexbuffer.begin(3, DefaultVertexFormats.POSITION);
                 vertexbuffer.pos(box.minX, box.minY, box.minZ).endVertex();
                 vertexbuffer.pos(box.maxX, box.minY, box.minZ).endVertex();
@@ -233,14 +233,14 @@ public class ThutCrafts
             if (max.getY() - min.getY() > 15 || dw > 2 * 10 + 1)
             {
                 String message = "msg.lift.toobig";
-                if (!worldIn.isRemote) playerIn.addChatMessage(new TextComponentTranslation(message));
+                if (!worldIn.isRemote) playerIn.sendMessage(new TextComponentTranslation(message));
                 return;
             }
             if (!worldIn.isRemote)
             {
                 IBlockEntity.BlockEntityFormer.makeBlockEntity(evt.getWorld(), min, max, mid, EntityCraft.class);
                 String message = "msg.lift.create";
-                playerIn.addChatMessage(new TextComponentTranslation(message));
+                playerIn.sendMessage(new TextComponentTranslation(message));
             }
             itemstack.getTagCompound().removeTag("min");
         }
@@ -275,14 +275,14 @@ public class ThutCrafts
             if (max.getY() - min.getY() > 10 || dw > 2 * 5 + 1)
             {
                 String message = "msg.lift.toobig";
-                if (!worldIn.isRemote) playerIn.addChatMessage(new TextComponentTranslation(message));
+                if (!worldIn.isRemote) playerIn.sendMessage(new TextComponentTranslation(message));
                 return;
             }
             if (!worldIn.isRemote)
             {
                 IBlockEntity.BlockEntityFormer.makeBlockEntity(evt.getWorld(), min, max, mid, EntityCraft.class);
                 String message = "msg.lift.create";
-                playerIn.addChatMessage(new TextComponentTranslation(message));
+                playerIn.sendMessage(new TextComponentTranslation(message));
             }
             itemstack.getTagCompound().removeTag("min");
             evt.setCanceled(true);
@@ -294,7 +294,7 @@ public class ThutCrafts
             Vector3.getNewVector().set(pos).writeToNBT(min, "");
             itemstack.getTagCompound().setTag("min", min);
             String message = "msg.lift.setcorner";
-            if (!worldIn.isRemote) playerIn.addChatMessage(new TextComponentTranslation(message, pos));
+            if (!worldIn.isRemote) playerIn.sendMessage(new TextComponentTranslation(message, pos));
             evt.setCanceled(true);
             itemstack.getTagCompound().setLong("time", worldIn.getWorldTime());
         }

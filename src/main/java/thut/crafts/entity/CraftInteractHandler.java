@@ -37,8 +37,8 @@ public class CraftInteractHandler
             EnumHand hand)
     {
         if (player.isSneaking()) return EnumActionResult.PASS;
-        vec = vec.addVector(vec.xCoord > 0 ? -0.01 : 0.01, vec.yCoord > 0 ? -0.01 : 0.01,
-                vec.zCoord > 0 ? -0.01 : 0.01);
+        vec = vec.addVector(vec.x > 0 ? -0.01 : 0.01, vec.y > 0 ? -0.01 : 0.01,
+                vec.z > 0 ? -0.01 : 0.01);
         Vec3d playerPos = player.getPositionVector().addVector(0, player.getEyeHeight(), 0);
         Vec3d start = playerPos.subtract(craft.getPositionVector());
         RayTraceResult trace = IBlockEntity.BlockEntityFormer.rayTraceInternal(start.add(craft.getPositionVector()),
@@ -54,9 +54,9 @@ public class CraftInteractHandler
         else
         {
             pos = trace.getBlockPos();
-            hitX = (float) (trace.hitVec.xCoord - pos.getX());
-            hitY = (float) (trace.hitVec.yCoord - pos.getY());
-            hitZ = (float) (trace.hitVec.zCoord - pos.getZ());
+            hitX = (float) (trace.hitVec.x - pos.getX());
+            hitY = (float) (trace.hitVec.y - pos.getY());
+            hitZ = (float) (trace.hitVec.z - pos.getZ());
             side = trace.sideHit;
         }
         IBlockState state = craft.getFakeWorld().getBlockState(pos);
@@ -68,16 +68,16 @@ public class CraftInteractHandler
         else if (trace == null || !state.getMaterial().isSolid())
         {
             Vec3d playerLook = playerPos.add(player.getLookVec().scale(4));
-            RayTraceResult result = craft.worldObj.rayTraceBlocks(playerPos, playerLook, false, true, false);
+            RayTraceResult result = craft.world.rayTraceBlocks(playerPos, playerLook, false, true, false);
             if (result != null && result.typeOfHit == Type.BLOCK)
             {
                 pos = result.getBlockPos();
-                state = craft.worldObj.getBlockState(pos);
-                hitX = (float) (result.hitVec.xCoord - pos.getX());
-                hitY = (float) (result.hitVec.yCoord - pos.getY());
-                hitZ = (float) (result.hitVec.zCoord - pos.getZ());
+                state = craft.world.getBlockState(pos);
+                hitX = (float) (result.hitVec.x - pos.getX());
+                hitY = (float) (result.hitVec.y - pos.getY());
+                hitZ = (float) (result.hitVec.z - pos.getZ());
                 activate = state.getBlock().onBlockActivated(craft.getEntityWorld(), pos, state, player, hand, result.sideHit, hitX, hitY, hitZ);
-                if (activate && craft.worldObj.isRemote)
+                if (activate && craft.world.isRemote)
                 {
                     PacketBuffer buffer = new PacketBuffer(Unpooled.buffer(25));
                     buffer.writeFloat(hitX);
@@ -125,7 +125,7 @@ public class CraftInteractHandler
                 BlockPos pos1 = new BlockPos(seatPos.x, seatPos.y, seatPos.z);
                 if (pos1.equals(pos))
                 {
-                    if (!craft.worldObj.isRemote && !seat.entityId.equals(player.getUniqueID()))
+                    if (!craft.world.isRemote && !seat.entityId.equals(player.getUniqueID()))
                     {
                         craft.setSeatID(i, player.getUniqueID());
                         player.startRiding(craft);
