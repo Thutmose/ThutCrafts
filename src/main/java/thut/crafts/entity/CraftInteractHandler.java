@@ -33,12 +33,11 @@ public class CraftInteractHandler
         this.craft = lift;
     }
 
-    public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec,
-            EnumHand hand)
+    public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec, EnumHand hand)
     {
         if (player.isSneaking()) return EnumActionResult.PASS;
-        vec = vec.addVector(vec.x > 0 ? -0.01 : 0.01, vec.y > 0 ? -0.01 : 0.01,
-                vec.z > 0 ? -0.01 : 0.01);
+        if (processInitialInteract(player, player.getHeldItem(hand), hand)) return EnumActionResult.SUCCESS;
+        vec = vec.addVector(vec.x > 0 ? -0.01 : 0.01, vec.y > 0 ? -0.01 : 0.01, vec.z > 0 ? -0.01 : 0.01);
         Vec3d playerPos = player.getPositionVector().addVector(0, player.getEyeHeight(), 0);
         Vec3d start = playerPos.subtract(craft.getPositionVector());
         RayTraceResult trace = IBlockEntity.BlockEntityFormer.rayTraceInternal(start.add(craft.getPositionVector()),
@@ -76,7 +75,8 @@ public class CraftInteractHandler
                 hitX = (float) (result.hitVec.x - pos.getX());
                 hitY = (float) (result.hitVec.y - pos.getY());
                 hitZ = (float) (result.hitVec.z - pos.getZ());
-                activate = state.getBlock().onBlockActivated(craft.getEntityWorld(), pos, state, player, hand, result.sideHit, hitX, hitY, hitZ);
+                activate = state.getBlock().onBlockActivated(craft.getEntityWorld(), pos, state, player, hand,
+                        result.sideHit, hitX, hitY, hitZ);
                 if (activate && craft.world.isRemote)
                 {
                     PacketBuffer buffer = new PacketBuffer(Unpooled.buffer(25));
@@ -141,11 +141,12 @@ public class CraftInteractHandler
     {
         if (stack != null && stack.getItem() == Items.BLAZE_ROD)
         {
-            if (stack.getTagCompound() == null)
+            System.out.println("inhandler "+player);
+            if (stack.getTagCompound() == null && !player.world.isRemote)
             {
                 craft.setDead();
+                return true;
             }
-            return true;
         }
         return false;
     }

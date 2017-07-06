@@ -119,7 +119,8 @@ public class EntityCraft extends EntityLivingBase
                                                                 @Override
                                                                 public Seat copyValue(Seat value)
                                                                 {
-                                                                    return new Seat((Vector3f) value.seat.clone(), value.entityId);
+                                                                    return new Seat((Vector3f) value.seat.clone(),
+                                                                            value.entityId);
                                                                 }
                                                             };
 
@@ -625,7 +626,7 @@ public class EntityCraft extends EntityLivingBase
     @Override
     /** Applies the given player interaction to this Entity. */
     public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec, EnumHand hand)
-    {
+    {System.out.println("inentity "+player);
         if (interacter == null) interacter = new CraftInteractHandler(this);
         try
         {
