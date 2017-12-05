@@ -16,7 +16,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -61,7 +60,6 @@ public class ThutCrafts
         MinecraftForge.EVENT_BUS.register(this);
         EntityRegistry.registerModEntity(new ResourceLocation("thutcrafts:craft"), EntityCraft.class, "craft", 1, this,
                 32, 1, true);
-        DataSerializers.registerSerializer(EntityCraft.SEATSERIALIZER);
         PacketPipeline.packetPipeline = NetworkRegistry.INSTANCE.newSimpleChannel(Reference.MODID);
         PacketPipeline.packetPipeline.registerMessage(MessageHandlerClient.class, ClientPacket.class, 0, Side.CLIENT);
         PacketPipeline.packetPipeline.registerMessage(MessageHandlerServer.class, ServerPacket.class, 1, Side.SERVER);
