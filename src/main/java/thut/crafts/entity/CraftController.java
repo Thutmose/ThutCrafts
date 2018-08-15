@@ -1,5 +1,6 @@
 package thut.crafts.entity;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.world.World;
 
 public class CraftController
@@ -25,10 +26,18 @@ public class CraftController
         if (!entity.isBeingRidden()) return;
         if (leftRotateDown)
         {
+            for (Entity passenger : entity.getPassengers())
+            {
+                passenger.rotationYaw -= 5;
+            }
             entity.rotationYaw -= 5;
         }
         if (rightRotateDown)
         {
+            for (Entity passenger : entity.getPassengers())
+            {
+                passenger.rotationYaw += 5;
+            }
             entity.rotationYaw += 5;
         }
     }

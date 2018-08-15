@@ -3,95 +3,53 @@ package thut.crafts.entity;
 import javax.annotation.Nullable;
 import javax.vecmath.Vector3f;
 
-import io.netty.buffer.Unpooled;
 import net.minecraft.block.BlockStairs;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumActionResult;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.MutableBlockPos;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.RayTraceResult.Type;
 import net.minecraft.util.math.Vec3d;
 import thut.api.entity.IMultiplePassengerEntity.Seat;
-import thut.api.entity.blockentity.BlockEntityUpdater;
+import thut.api.entity.blockentity.BlockEntityInteractHandler;
 import thut.api.entity.blockentity.IBlockEntity;
-import thut.crafts.network.PacketPipeline;
 
-public class CraftInteractHandler
+public class CraftInteractHandler extends BlockEntityInteractHandler
 {
     final EntityCraft craft;
 
     public CraftInteractHandler(EntityCraft lift)
     {
+        super(lift);
         this.craft = lift;
     }
 
-    public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec, EnumHand hand)
+    public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec, ItemStack stack, EnumHand hand)
     {
         if (player.isSneaking()) return EnumActionResult.PASS;
-        if (processInitialInteract(player, player.getHeldItem(hand), hand)) return EnumActionResult.SUCCESS;
+        EnumActionResult result = super.applyPlayerInteraction(player, vec, stack, hand);
+        if (result == EnumActionResult.SUCCESS || processInitialInteract(player, player.getHeldItem(hand), hand))
+            return EnumActionResult.SUCCESS;
         vec = vec.addVector(vec.x > 0 ? -0.01 : 0.01, vec.y > 0 ? -0.01 : 0.01, vec.z > 0 ? -0.01 : 0.01);
         Vec3d playerPos = player.getPositionVector().addVector(0, player.getEyeHeight(), 0);
         Vec3d start = playerPos.subtract(craft.getPositionVector());
         RayTraceResult trace = IBlockEntity.BlockEntityFormer.rayTraceInternal(start.add(craft.getPositionVector()),
                 vec.add(craft.getPositionVector()), craft);
         BlockPos pos;
-        float hitX, hitY, hitZ;
-        EnumFacing side = EnumFacing.DOWN;
         if (trace == null)
         {
-            pos = new BlockPos(0, 0, 0);
-            hitX = hitY = hitZ = 0;
+            pos = craft.getPosition();
         }
         else
         {
             pos = trace.getBlockPos();
-            hitX = (float) (trace.hitVec.x - pos.getX());
-            hitY = (float) (trace.hitVec.y - pos.getY());
-            hitZ = (float) (trace.hitVec.z - pos.getZ());
-            side = trace.sideHit;
         }
         IBlockState state = craft.getFakeWorld().getBlockState(pos);
-        TileEntity tile = craft.getFakeWorld().getTileEntity(pos);
-        boolean blacklist = tile != null && !BlockEntityUpdater.isWhitelisted(tile);
-        boolean activate = blacklist || state.getBlock().onBlockActivated(craft.getFakeWorld(), pos, state, player,
-                hand, side, hitX, hitY, hitZ);
-        if (activate) return EnumActionResult.SUCCESS;
-        else if (trace == null || !state.getMaterial().isSolid())
-        {
-            Vec3d playerLook = playerPos.add(player.getLookVec().scale(4));
-            RayTraceResult result = craft.world.rayTraceBlocks(playerPos, playerLook, false, true, false);
-            if (result != null && result.typeOfHit == Type.BLOCK)
-            {
-                pos = result.getBlockPos();
-                state = craft.world.getBlockState(pos);
-                hitX = (float) (result.hitVec.x - pos.getX());
-                hitY = (float) (result.hitVec.y - pos.getY());
-                hitZ = (float) (result.hitVec.z - pos.getZ());
-                activate = state.getBlock().onBlockActivated(craft.getEntityWorld(), pos, state, player, hand,
-                        result.sideHit, hitX, hitY, hitZ);
-                if (activate && craft.world.isRemote)
-                {
-                    PacketBuffer buffer = new PacketBuffer(Unpooled.buffer(25));
-                    buffer.writeFloat(hitX);
-                    buffer.writeFloat(hitY);
-                    buffer.writeFloat(hitZ);
-                    buffer.writeByte(result.sideHit.ordinal());
-                    buffer.writeBlockPos(pos);
-                    PacketPipeline.sendToServer(new PacketPipeline.ServerPacket(buffer));
-                    return EnumActionResult.SUCCESS;
-                }
-            }
-            return EnumActionResult.PASS;
-        }
-        else if (state.getBlock() instanceof BlockStairs)
+        if (trace != null && state.getBlock() instanceof BlockStairs)
         {
             if (craft.getSeatCount() == 0)
             {
@@ -134,15 +92,28 @@ public class CraftInteractHandler
                 }
             }
         }
+        else if (craft.rotationYaw != 0)
+        {
+
+            for (int i = 0; i < craft.getSeatCount(); i++)
+            {
+                Seat seat = craft.getSeat(i);
+                if (!craft.world.isRemote && seat.entityId.equals(Seat.BLANK))
+                {
+                    craft.setSeatID(i, player.getUniqueID());
+                    player.startRiding(craft);
+                    break;
+                }
+            }
+        }
         return EnumActionResult.PASS;
     }
 
     public boolean processInitialInteract(EntityPlayer player, @Nullable ItemStack stack, EnumHand hand)
     {
-        if (stack != null && stack.getItem() == Items.BLAZE_ROD)
+        if (stack.getItem() == Items.BLAZE_ROD)
         {
-            System.out.println("inhandler "+player);
-            if (stack.getTagCompound() == null && !player.world.isRemote)
+            if (!player.world.isRemote)
             {
                 craft.setDead();
                 return true;

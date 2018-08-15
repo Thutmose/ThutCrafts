@@ -13,15 +13,17 @@ import thut.crafts.entity.EntityCraft;
 
 public class PacketCraftControl implements IMessage, IMessageHandler<PacketCraftControl, IMessage>
 {
-    private static final byte FORWARD = 1;
-    private static final byte BACK    = 2;
-    private static final byte LEFT    = 4;
-    private static final byte RIGHT   = 8;
-    private static final byte UP      = 16;
-    private static final byte DOWN    = 32;
+    private static final short FORWARD = 1;
+    private static final short BACK    = 2;
+    private static final short LEFT    = 4;
+    private static final short RIGHT   = 8;
+    private static final short UP      = 16;
+    private static final short DOWN    = 32;
+    private static final short RLEFT   = 64;
+    private static final short RRIGHT  = 128;
 
-    int                       entityId;
-    byte                      message;
+    int                        entityId;
+    short                      message;
 
     public static void sendControlPacket(Entity pokemob, CraftController controller)
     {
@@ -33,6 +35,8 @@ public class PacketCraftControl implements IMessage, IMessageHandler<PacketCraft
         if (controller.rightInputDown) packet.message += RIGHT;
         if (controller.upInputDown) packet.message += UP;
         if (controller.downInputDown) packet.message += DOWN;
+        if (controller.leftRotateDown) packet.message += RLEFT;
+        if (controller.rightRotateDown) packet.message += RRIGHT;
         PacketPipeline.packetPipeline.sendToServer(packet);
     }
 
@@ -58,14 +62,14 @@ public class PacketCraftControl implements IMessage, IMessageHandler<PacketCraft
     public void fromBytes(ByteBuf buf)
     {
         entityId = buf.readInt();
-        message = buf.readByte();
+        message = buf.readShort();
     }
 
     @Override
     public void toBytes(ByteBuf buf)
     {
         buf.writeInt(entityId);
-        buf.writeByte(message);
+        buf.writeShort(message);
     }
 
     void processMessage(MessageContext ctx, PacketCraftControl message)
@@ -85,6 +89,8 @@ public class PacketCraftControl implements IMessage, IMessageHandler<PacketCraft
             controller.rightInputDown = (message.message & RIGHT) > 0;
             controller.upInputDown = (message.message & UP) > 0;
             controller.downInputDown = (message.message & DOWN) > 0;
+            controller.leftRotateDown = (message.message & RLEFT) > 0;
+            controller.rightRotateDown = (message.message & RRIGHT) > 0;
         }
     }
 }

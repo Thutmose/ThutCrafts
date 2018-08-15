@@ -25,6 +25,7 @@ import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
@@ -54,9 +55,16 @@ import thut.crafts.network.PacketPipeline.ServerPacket.MessageHandlerServer;
 @Mod(modid = Reference.MODID, name = "ThutCrafts", dependencies = "required-after:thutcore", version = Reference.VERSION, acceptedMinecraftVersions = Reference.MCVERSIONS)
 public class ThutCrafts
 {
+    private boolean canRotate = false;
+
     @EventHandler
     public void preInit(FMLPreInitializationEvent event)
     {
+        Configuration config = new Configuration(event.getSuggestedConfigurationFile());
+        config.load();
+        canRotate = config.getBoolean("canRotate", Configuration.CATEGORY_GENERAL, canRotate, "Can the crafts rotate? WARNING, YOU CANNOT STAND ON A ROTATED CRAFT!");
+        config.save();
+
         MinecraftForge.EVENT_BUS.register(this);
         EntityRegistry.registerModEntity(new ResourceLocation("thutcrafts:craft"), EntityCraft.class, "craft", 1, this,
                 32, 1, true);
@@ -82,35 +90,20 @@ public class ThutCrafts
             Entity e = event.player.getRidingEntity();
             if (e instanceof EntityCraft)
             {
+                EntityPlayerSP player = ((EntityPlayerSP) event.player);
                 CraftController controller = ((EntityCraft) e).controller;
                 if (controller == null) break control;
-                controller.backInputDown = ((EntityPlayerSP) event.player).movementInput.backKeyDown;
-                controller.forwardInputDown = ((EntityPlayerSP) event.player).movementInput.forwardKeyDown;
-                controller.leftInputDown = ((EntityPlayerSP) event.player).movementInput.leftKeyDown;
-                controller.rightInputDown = ((EntityPlayerSP) event.player).movementInput.rightKeyDown;
-
-                boolean up = false;
-                // if (ClientProxyPokecube.mobUp.getKeyCode() ==
-                // Keyboard.KEY_NONE)
+                controller.backInputDown = player.movementInput.backKeyDown;
+                controller.forwardInputDown = player.movementInput.forwardKeyDown;
+                controller.leftInputDown = player.movementInput.leftKeyDown;
+                controller.rightInputDown = player.movementInput.rightKeyDown;
+                controller.upInputDown = Keyboard.isKeyDown(Keyboard.KEY_SPACE);
+                controller.downInputDown = Keyboard.isKeyDown(Keyboard.KEY_LCONTROL);
+                if (canRotate)
                 {
-                    up = Keyboard.isKeyDown(Keyboard.KEY_SPACE);
+                    controller.rightRotateDown = Keyboard.isKeyDown(Keyboard.KEY_RBRACKET);
+                    controller.leftRotateDown = Keyboard.isKeyDown(Keyboard.KEY_LBRACKET);
                 }
-                // else
-                // {
-                // up = GameSettings.isKeyDown(ClientProxyPokecube.mobUp);
-                // }
-                boolean down = false;
-                // if (ClientProxyPokecube.mobDown.getKeyCode() ==
-                // Keyboard.KEY_NONE)
-                {
-                    down = Keyboard.isKeyDown(Keyboard.KEY_LCONTROL);
-                }
-                // else
-                // {
-                // down = GameSettings.isKeyDown(ClientProxyPokecube.mobDown);
-                // }
-                controller.upInputDown = up;
-                controller.downInputDown = down;
                 PacketCraftControl.sendControlPacket(e, controller);
             }
         }
