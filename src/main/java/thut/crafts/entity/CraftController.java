@@ -24,6 +24,13 @@ public class CraftController
     public void doServerTick(World world)
     {
         if (!entity.isBeingRidden()) return;
+
+        if (leftRotateDown || rightRotateDown)
+        {
+            entity.prevRotationYaw = entity.rotationYaw;
+            entity.prevRenderYawOffset = entity.renderYawOffset;
+        }
+
         if (leftRotateDown)
         {
             for (Entity passenger : entity.getPassengers())

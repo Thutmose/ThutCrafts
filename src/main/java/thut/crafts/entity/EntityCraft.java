@@ -105,6 +105,15 @@ public class EntityCraft extends BlockEntityBase implements IMultiplePassengerEn
         float destX = (float) (toMoveX ? (controller.leftInputDown ? 30 : -30) : 0);
         float destZ = (float) (toMoveZ ? (controller.forwardInputDown ? 30 : -30) : 0);
         toMoveY = toMoveX = toMoveZ = false;
+
+        if (destX == destY && destY == destZ && destZ == 0)
+        {
+            motionZ *= 0.5;
+            motionY *= 0.5;
+            motionZ *= 0.5;
+            return;
+        }
+
         Vector3 dest = Vector3.getNewVector().set(destX, destY, destZ);
         Seat seat = null;
         for (int i = 0; i < getSeatCount(); i++)
@@ -149,9 +158,6 @@ public class EntityCraft extends BlockEntityBase implements IMultiplePassengerEn
         {
             destX = MathHelper.sin(-rotationYaw * 0.017453292F) * f;
             destZ = MathHelper.cos(rotationYaw * 0.017453292F) * f;
-
-            System.out.println(f + " " + destX + " " + destZ);
-
         }
         else if (controller.backInputDown)
         {
@@ -425,7 +431,6 @@ public class EntityCraft extends BlockEntityBase implements IMultiplePassengerEn
     @Override
     protected void onGridAlign()
     {
-        // rotationYaw = 0;
         BlockPos pos = getPosition();
         setPosition(pos.getX() + 0.5, Math.round(posY), pos.getZ() + 0.5);
         PacketHandler.sendEntityUpdate(this);
