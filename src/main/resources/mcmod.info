@@ -1,0 +1,13 @@
+[
+{
+  "modid": "thutcrafts",
+  "name": "ThutCrafts",
+  "description": "Dynamically Moving Block Structures for Minecraft",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "authorList": ["Thutmose"],
+  "parent": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

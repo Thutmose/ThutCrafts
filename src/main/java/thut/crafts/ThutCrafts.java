@@ -62,7 +62,8 @@ public class ThutCrafts
     {
         Configuration config = new Configuration(event.getSuggestedConfigurationFile());
         config.load();
-        canRotate = config.getBoolean("canRotate", Configuration.CATEGORY_GENERAL, canRotate, "Can the crafts rotate? WARNING, YOU CANNOT STAND ON A ROTATED CRAFT!");
+        canRotate = config.getBoolean("canRotate", Configuration.CATEGORY_GENERAL, canRotate,
+                "Can the crafts rotate? WARNING, YOU CANNOT STAND ON A ROTATED CRAFT!");
         config.save();
 
         MinecraftForge.EVENT_BUS.register(this);
@@ -230,8 +231,9 @@ public class ThutCrafts
             }
             if (!worldIn.isRemote)
             {
-                IBlockEntity.BlockEntityFormer.makeBlockEntity(evt.getWorld(), min, max, mid, EntityCraft.class);
-                String message = "msg.lift.create";
+                EntityCraft craft = IBlockEntity.BlockEntityFormer.makeBlockEntity(evt.getWorld(), min, max, mid,
+                        EntityCraft.class);
+                String message = craft != null ? "msg.craft.create" : "msg.craft.fail";
                 playerIn.sendMessage(new TextComponentTranslation(message));
             }
             itemstack.getTagCompound().removeTag("min");
@@ -266,14 +268,15 @@ public class ThutCrafts
             int dw = Math.max(max.getX() - min.getX(), max.getZ() - min.getZ());
             if (max.getY() - min.getY() > 10 || dw > 2 * 5 + 1)
             {
-                String message = "msg.lift.toobig";
+                String message = "msg.craft.toobig";
                 if (!worldIn.isRemote) playerIn.sendMessage(new TextComponentTranslation(message));
                 return;
             }
             if (!worldIn.isRemote)
             {
-                IBlockEntity.BlockEntityFormer.makeBlockEntity(evt.getWorld(), min, max, mid, EntityCraft.class);
-                String message = "msg.lift.create";
+                EntityCraft craft = IBlockEntity.BlockEntityFormer.makeBlockEntity(evt.getWorld(), min, max, mid,
+                        EntityCraft.class);
+                String message = craft != null ? "msg.craft.create" : "msg.craft.fail";
                 playerIn.sendMessage(new TextComponentTranslation(message));
             }
             itemstack.getTagCompound().removeTag("min");
