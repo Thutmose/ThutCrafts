@@ -9,12 +9,12 @@ import javax.xml.ws.handler.MessageContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
+import net.minecraft.util.Direction;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -40,7 +40,7 @@ public class PacketPipeline
                 {
                     double y = buffer.readDouble();
                     double dy = buffer.readDouble();
-                    EntityPlayer player = ThutCore.proxy.getPlayer();
+                    PlayerEntity player = ThutCore.proxy.getPlayer();
                     y += player.getYOffset();
                     player.motionY = Math.max(dy, player.motionY);
                     ThutCore.proxy.getPlayer().setPosition(player.posX, y, player.posZ);
@@ -55,7 +55,7 @@ public class PacketPipeline
         {
         }
 
-        public ClientPacket(byte channel, NBTTagCompound nbt)
+        public ClientPacket(byte channel, CompoundNBT nbt)
         {
             this.buffer = new PacketBuffer(Unpooled.buffer());
             buffer.writeByte(channel);
@@ -99,20 +99,20 @@ public class PacketPipeline
         public static class MessageHandlerServer implements IMessageHandler<ServerPacket, IMessage>
         {
 
-            public void handleServerSide(EntityPlayer player, PacketBuffer buffer)
+            public void handleServerSide(PlayerEntity player, PacketBuffer buffer)
             {
 
                 final Vector3f hit = new Vector3f(buffer.readFloat(), buffer.readFloat(), buffer.readFloat());
-                final EnumFacing side = EnumFacing.values()[buffer.readByte()];
+                final Direction side = Direction.values()[buffer.readByte()];
                 final BlockPos pos = buffer.readBlockPos();
-                final EntityPlayer player1 = player;
+                final PlayerEntity player1 = player;
                 FMLCommonHandler.instance().getMinecraftServerInstance().addScheduledTask(new Runnable()
                 {
                     @Override
                     public void run()
                     {
                         IBlockState state = player1.world.getBlockState(pos);
-                        state.getBlock().onBlockActivated(player1.world, pos, state, player1, EnumHand.MAIN_HAND,
+                        state.getBlock().onBlockActivated(player1.world, pos, state, player1, Hand.MAIN_HAND,
                                 side, hit.x, hit.y, hit.z);
                     }
                 });
@@ -121,7 +121,7 @@ public class PacketPipeline
             @Override
             public ServerPacket onMessage(ServerPacket message, MessageContext ctx)
             {
-                EntityPlayer player = ctx.getServerHandler().player;
+                PlayerEntity player = ctx.getServerHandler().player;
                 handleServerSide(player, message.buffer);
 
                 return null;
@@ -134,7 +134,7 @@ public class PacketPipeline
         {
         }
 
-        public ServerPacket(byte channel, NBTTagCompound nbt)
+        public ServerPacket(byte channel, CompoundNBT nbt)
         {
             this.buffer = new PacketBuffer(Unpooled.buffer());
             buffer.writeByte(channel);
@@ -205,7 +205,7 @@ public class PacketPipeline
         return new ClientPacket(packetData);
     }
 
-    public static ClientPacket makeClientPacket(byte channel, NBTTagCompound nbt)
+    public static ClientPacket makeClientPacket(byte channel, CompoundNBT nbt)
     {
         PacketBuffer packetData = new PacketBuffer(Unpooled.buffer());
         packetData.writeByte(channel);
@@ -214,7 +214,7 @@ public class PacketPipeline
         return new ClientPacket(packetData);
     }
 
-    public static ServerPacket makePacket(byte channel, NBTTagCompound nbt)
+    public static ServerPacket makePacket(byte channel, CompoundNBT nbt)
     {
         PacketBuffer packetData = new PacketBuffer(Unpooled.buffer());
         packetData.writeByte(channel);
@@ -245,14 +245,14 @@ public class PacketPipeline
         packetPipeline.sendToAllAround(toSend, new TargetPoint(dimID, point.x, point.y, point.z, distance));
     }
 
-    public static void sendToClient(IMessage toSend, EntityPlayer player)
+    public static void sendToClient(IMessage toSend, PlayerEntity player)
     {
         if (player == null)
         {
             System.out.println("null player");
             return;
         }
-        packetPipeline.sendTo(toSend, (EntityPlayerMP) player);
+        packetPipeline.sendTo(toSend, (ServerPlayerEntity) player);
     }
 
     public static void sendToServer(IMessage toSend)

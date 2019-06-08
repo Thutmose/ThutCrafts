@@ -11,8 +11,8 @@ import net.minecraft.block.BlockStairs;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.MoverType;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
@@ -208,7 +208,7 @@ public class EntityCraft extends BlockEntityBase implements IMultiplePassengerEn
         {
             if (passenger.isSneaking())
             {
-                passenger.dismountRidingEntity();
+                passenger.stopRiding();
             }
             IMultiplePassengerEntity.MultiplePassengerManager.managePassenger(passenger, this);
         }
@@ -383,16 +383,16 @@ public class EntityCraft extends BlockEntityBase implements IMultiplePassengerEn
     }
 
     @Override
-    public void readEntityFromNBT(NBTTagCompound nbt)
+    public void readEntityFromNBT(CompoundNBT nbt)
     {
         super.readEntityFromNBT(nbt);
         energy = nbt.getInteger("energy");
         if (nbt.hasKey("seats"))
         {
-            NBTTagList seatsList = nbt.getTagList("seats", 10);
-            for (int i = 0; i < seatsList.tagCount(); ++i)
+            ListNBT seatsList = nbt.getTagList("seats", 10);
+            for (int i = 0; i < seatsList.size(); ++i)
             {
-                NBTTagCompound nbt1 = seatsList.getCompoundTagAt(i);
+                CompoundNBT nbt1 = seatsList.getCompound(i);
                 Seat seat = Seat.readFromNBT(nbt1);
                 this.getSeat(i).seat = seat.seat;
                 this.getSeat(i).entityId = seat.entityId;
@@ -401,14 +401,14 @@ public class EntityCraft extends BlockEntityBase implements IMultiplePassengerEn
     }
 
     @Override
-    public void writeEntityToNBT(NBTTagCompound nbt)
+    public void writeEntityToNBT(CompoundNBT nbt)
     {
         super.writeEntityToNBT(nbt);
         nbt.setInteger("energy", energy);
-        NBTTagList seats = new NBTTagList();
+        ListNBT seats = new ListNBT();
         for (int i = 0; i < getSeatCount(); i++)
         {
-            NBTTagCompound tag1 = new NBTTagCompound();
+            CompoundNBT tag1 = new CompoundNBT();
             getSeat(i).writeToNBT(tag1);
             seats.appendTag(tag1);
         }

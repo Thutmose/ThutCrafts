@@ -4,24 +4,27 @@ import com.mojang.blaze3d.platform.GlStateManager;
 
 import net.java.games.input.Keyboard;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.EnumHand;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.util.Hand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -31,14 +34,12 @@ import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedOutEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.network.NetworkRegistry;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import thut.api.entity.blockentity.IBlockEntity;
 import thut.api.entity.blockentity.RenderBlockEntity;
 import thut.api.maths.Vector3;
@@ -58,7 +59,7 @@ public class ThutCrafts
     private boolean canRotate = false;
 
     @EventHandler
-    public void preInit(FMLPreInitializationEvent event)
+    public void preInit(FMLCommonSetupEvent event)
     {
         Configuration config = new Configuration(event.getSuggestedConfigurationFile());
         config.load();
@@ -70,28 +71,28 @@ public class ThutCrafts
         EntityRegistry.registerModEntity(new ResourceLocation("thutcrafts:craft"), EntityCraft.class, "craft", 1, this,
                 32, 1, true);
         PacketPipeline.packetPipeline = NetworkRegistry.INSTANCE.newSimpleChannel(Reference.MODID);
-        PacketPipeline.packetPipeline.registerMessage(MessageHandlerClient.class, ClientPacket.class, 0, Side.CLIENT);
-        PacketPipeline.packetPipeline.registerMessage(MessageHandlerServer.class, ServerPacket.class, 1, Side.SERVER);
+        PacketPipeline.packetPipeline.registerMessage(MessageHandlerClient.class, ClientPacket.class, 0, Dist.CLIENT);
+        PacketPipeline.packetPipeline.registerMessage(MessageHandlerServer.class, ServerPacket.class, 1, Dist.DEDICATED_SERVER);
 
         PacketPipeline.packetPipeline.registerMessage(PacketCraftControl.class, PacketCraftControl.class, 2,
-                Side.CLIENT);
+                Dist.CLIENT);
         PacketPipeline.packetPipeline.registerMessage(PacketCraftControl.class, PacketCraftControl.class, 3,
-                Side.SERVER);
+                Dist.DEDICATED_SERVER);
 
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void clientTick(TickEvent.PlayerTickEvent event)
     {
-        if (event.phase == Phase.START || event.player != Minecraft.getMinecraft().player) return;
+        if (event.phase == Phase.START || event.player != Minecraft.getInstance().player) return;
         control:
-        if (event.player.isRiding() && Minecraft.getMinecraft().currentScreen == null)
+        if (event.player.isPassenger() && Minecraft.getInstance().currentScreen == null)
         {
             Entity e = event.player.getRidingEntity();
             if (e instanceof EntityCraft)
             {
-                EntityPlayerSP player = ((EntityPlayerSP) event.player);
+                ClientPlayerEntity player = ((ClientPlayerEntity) event.player);
                 CraftController controller = ((EntityCraft) e).controller;
                 if (controller == null) break control;
                 controller.backInputDown = player.movementInput.backKeyDown;
@@ -110,26 +111,26 @@ public class ThutCrafts
         }
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void RenderBounds(DrawBlockHighlightEvent event)
     {
         ItemStack held;
-        EntityPlayer player = event.getPlayer();
+        PlayerEntity player = event.getPlayer();
         if ((held = player.getHeldItemMainhand()) != null || (held = player.getHeldItemOffhand()) != null)
         {
             BlockPos pos = event.getTarget().getBlockPos();
             if (pos == null) return;
             if (!player.world.getBlockState(pos).getMaterial().isSolid())
             {
-                Vec3d loc = player.getPositionVector().addVector(0, player.getEyeHeight(), 0)
+                Vec3d loc = player.getPositionVector().add(0, player.getEyeHeight(), 0)
                         .add(player.getLookVec().scale(2));
                 pos = new BlockPos(loc);
             }
 
-            if (held.getTagCompound() != null && held.getTagCompound().hasKey("min"))
+            if (held.getTag() != null && held.getTag().hasKey("min"))
             {
-                BlockPos min = Vector3.readFromNBT(held.getTagCompound().getCompoundTag("min"), "").getPos();
+                BlockPos min = Vector3.readFromNBT(held.getTag().getCompound("min"), "").getPos();
                 BlockPos max = pos;
                 AxisAlignedBB box = new AxisAlignedBB(min, max);
                 min = new BlockPos(box.minX, box.minY, box.minZ);
@@ -182,15 +183,15 @@ public class ThutCrafts
         }
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     @EventHandler
-    public void clientPreInit(FMLPreInitializationEvent event)
+    public void clientPreInit(FMLCommonSetupEvent event)
     {
-        RenderingRegistry.registerEntityRenderingHandler(EntityCraft.class, new IRenderFactory<EntityLivingBase>()
+        RenderingRegistry.registerEntityRenderingHandler(EntityCraft.class, new IRenderFactory<LivingEntity>()
         {
             @SuppressWarnings({ "unchecked", "rawtypes" })
             @Override
-            public Render<? super EntityLivingBase> createRenderFor(RenderManager manager)
+            public Render<? super LivingEntity> createRenderFor(RenderManager manager)
             {
                 return new RenderBlockEntity(manager);
             }
@@ -200,18 +201,18 @@ public class ThutCrafts
     @SubscribeEvent
     public void interactRightClickBlock(PlayerInteractEvent.RightClickItem evt)
     {
-        if (evt.getHand() == EnumHand.OFF_HAND || evt.getWorld().isRemote || evt.getItemStack() == null
-                || !evt.getEntityPlayer().isSneaking() || evt.getItemStack().getItem() != Items.STICK)
+        if (evt.getHand() == Hand.OFF_HAND || evt.getWorld().isRemote || evt.getItemStack() == null
+                || !evt.getPlayerEntity().isSneaking() || evt.getItemStack().getItem() != Items.STICK)
             return;
         ItemStack itemstack = evt.getItemStack();
-        EntityPlayer playerIn = evt.getEntityPlayer();
+        PlayerEntity playerIn = evt.getPlayerEntity();
         World worldIn = evt.getWorld();
         if (!itemstack.getDisplayName().equals("Craft")) return;
-        if (itemstack.hasTagCompound() && playerIn.isSneaking() && itemstack.getTagCompound().hasKey("min")
-                && itemstack.getTagCompound().getLong("time") != worldIn.getWorldTime())
+        if (itemstack.hasTag() && playerIn.isSneaking() && itemstack.getTag().contains("min")
+                && itemstack.getTag().getLong("time") != worldIn.getDayTime())
         {
-            NBTTagCompound minTag = itemstack.getTagCompound().getCompoundTag("min");
-            Vec3d loc = playerIn.getPositionVector().addVector(0, playerIn.getEyeHeight(), 0)
+            CompoundNBT minTag = itemstack.getTag().getCompound("min");
+            Vec3d loc = playerIn.getPositionVector().add(0, playerIn.getEyeHeight(), 0)
                     .add(playerIn.getLookVec().scale(2));
             BlockPos pos = new BlockPos(loc);
             BlockPos min = pos;
@@ -226,7 +227,7 @@ public class ThutCrafts
             if (max.getY() - min.getY() > 15 || dw > 2 * 10 + 1)
             {
                 String message = "msg.lift.toobig";
-                if (!worldIn.isRemote) playerIn.sendMessage(new TextComponentTranslation(message));
+                if (!worldIn.isRemote) playerIn.sendMessage(new TranslationTextComponent(message));
                 return;
             }
             if (!worldIn.isRemote)
@@ -234,9 +235,9 @@ public class ThutCrafts
                 EntityCraft craft = IBlockEntity.BlockEntityFormer.makeBlockEntity(evt.getWorld(), min, max, mid,
                         EntityCraft.class);
                 String message = craft != null ? "msg.craft.create" : "msg.craft.fail";
-                playerIn.sendMessage(new TextComponentTranslation(message));
+                playerIn.sendMessage(new TranslationTextComponent(message));
             }
-            itemstack.getTagCompound().removeTag("min");
+            itemstack.getTag().remove("min");
         }
     }
 
@@ -246,17 +247,17 @@ public class ThutCrafts
     @SubscribeEvent
     public void interactRightClickBlock(PlayerInteractEvent.RightClickBlock evt)
     {
-        if (evt.getHand() == EnumHand.OFF_HAND || evt.getWorld().isRemote || evt.getItemStack() == null
+        if (evt.getHand() == Hand.OFF_HAND || evt.getWorld().isRemote || evt.getItemStack() == null
                 || !evt.getEntityPlayer().isSneaking() || evt.getItemStack().getItem() != Items.STICK)
             return;
         ItemStack itemstack = evt.getItemStack();
         if (!itemstack.getDisplayName().equals("Craft")) return;
-        EntityPlayer playerIn = evt.getEntityPlayer();
+        PlayerEntity playerIn = evt.getEntityPlayer();
         World worldIn = evt.getWorld();
         BlockPos pos = evt.getPos();
-        if (itemstack.hasTagCompound() && playerIn.isSneaking() && itemstack.getTagCompound().hasKey("min"))
+        if (itemstack.hasTag() && playerIn.isSneaking() && itemstack.getTag().contains("min"))
         {
-            NBTTagCompound minTag = itemstack.getTagCompound().getCompoundTag("min");
+            CompoundNBT minTag = itemstack.getTag().getCompound("min");
             BlockPos min = pos;
             BlockPos max = Vector3.readFromNBT(minTag, "").getPos();
             AxisAlignedBB box = new AxisAlignedBB(min, max);
@@ -269,7 +270,7 @@ public class ThutCrafts
             if (max.getY() - min.getY() > 10 || dw > 2 * 5 + 1)
             {
                 String message = "msg.craft.toobig";
-                if (!worldIn.isRemote) playerIn.sendMessage(new TextComponentTranslation(message));
+                if (!worldIn.isRemote) playerIn.sendMessage(new TranslationTextComponent(message));
                 return;
             }
             if (!worldIn.isRemote)
@@ -277,30 +278,30 @@ public class ThutCrafts
                 EntityCraft craft = IBlockEntity.BlockEntityFormer.makeBlockEntity(evt.getWorld(), min, max, mid,
                         EntityCraft.class);
                 String message = craft != null ? "msg.craft.create" : "msg.craft.fail";
-                playerIn.sendMessage(new TextComponentTranslation(message));
+                playerIn.sendMessage(new TranslationTextComponent(message));
             }
-            itemstack.getTagCompound().removeTag("min");
+            itemstack.getTag().remove("min");
             evt.setCanceled(true);
         }
         else
         {
-            if (!itemstack.hasTagCompound()) itemstack.setTagCompound(new NBTTagCompound());
-            NBTTagCompound min = new NBTTagCompound();
+            if (!itemstack.hasTag()) itemstack.setTag(new CompoundNBT());
+            CompoundNBT min = new CompoundNBT();
             Vector3.getNewVector().set(pos).writeToNBT(min, "");
-            itemstack.getTagCompound().setTag("min", min);
+            itemstack.getTag().put("min", min);
             String message = "msg.lift.setcorner";
-            if (!worldIn.isRemote) playerIn.sendMessage(new TextComponentTranslation(message, pos));
+            if (!worldIn.isRemote) playerIn.sendMessage(new TranslationTextComponent(message, pos));
             evt.setCanceled(true);
-            itemstack.getTagCompound().setLong("time", worldIn.getWorldTime());
+            itemstack.getTag().putLong("time", worldIn.getDayTime());
         }
     }
 
     @SubscribeEvent
     public void logout(PlayerLoggedOutEvent event)
     {
-        if (event.player.isRiding() && event.player.getLowestRidingEntity() instanceof EntityCraft)
+        if (event.getPlayer().isPassenger() && event.getPlayer().getLowestRidingEntity() instanceof EntityCraft)
         {
-            event.player.dismountRidingEntity();
+            event.getPlayer().stopRiding();
         }
     }
 }

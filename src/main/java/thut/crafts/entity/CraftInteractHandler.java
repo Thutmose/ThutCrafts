@@ -5,10 +5,10 @@ import javax.vecmath.Vector3f;
 
 import net.minecraft.block.BlockStairs;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumActionResult;
-import net.minecraft.util.EnumHand;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.MutableBlockPos;
 import net.minecraft.util.math.RayTraceResult;
@@ -28,14 +28,14 @@ public class CraftInteractHandler extends BlockEntityInteractHandler
     }
 
     @Override
-    public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec, ItemStack stack, EnumHand hand)
+    public EnumActionResult applyPlayerInteraction(PlayerEntity player, Vec3d vec, ItemStack stack, Hand hand)
     {
         if (player.isSneaking()) return EnumActionResult.PASS;
         EnumActionResult result = super.applyPlayerInteraction(player, vec, stack, hand);
         if (result == EnumActionResult.SUCCESS || processInitialInteract(player, player.getHeldItem(hand), hand))
             return EnumActionResult.SUCCESS;
-        vec = vec.addVector(vec.x > 0 ? -0.01 : 0.01, vec.y > 0 ? -0.01 : 0.01, vec.z > 0 ? -0.01 : 0.01);
-        Vec3d playerPos = player.getPositionVector().addVector(0, player.getEyeHeight(), 0);
+        vec = vec.add(vec.x > 0 ? -0.01 : 0.01, vec.y > 0 ? -0.01 : 0.01, vec.z > 0 ? -0.01 : 0.01);
+        Vec3d playerPos = player.getPositionVector().add(0, player.getEyeHeight(), 0);
         Vec3d start = playerPos.subtract(craft.getPositionVector());
         RayTraceResult trace = IBlockEntity.BlockEntityFormer.rayTraceInternal(start.add(craft.getPositionVector()),
                 vec.add(craft.getPositionVector()), craft);
@@ -110,7 +110,7 @@ public class CraftInteractHandler extends BlockEntityInteractHandler
     }
 
     @Override
-    public boolean processInitialInteract(EntityPlayer player, @Nullable ItemStack stack, EnumHand hand)
+    public boolean processInitialInteract(PlayerEntity player, @Nullable ItemStack stack, Hand hand)
     {
         if (stack.getItem() == Items.BLAZE_ROD)
         {

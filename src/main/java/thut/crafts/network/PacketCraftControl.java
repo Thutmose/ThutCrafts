@@ -4,11 +4,11 @@ import javax.xml.ws.handler.MessageContext;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.api.distmarker.Dist;
 import thut.crafts.entity.CraftController;
 import thut.crafts.entity.EntityCraft;
 
@@ -75,8 +75,8 @@ public class PacketCraftControl implements IMessage, IMessageHandler<PacketCraft
 
     void processMessage(MessageContext ctx, PacketCraftControl message)
     {
-        EntityPlayer player = null;
-        if (ctx.side == Side.SERVER)
+        PlayerEntity player = null;
+        if (ctx.side == Dist.DEDICATED_SERVER)
         {
             player = ctx.getServerHandler().player;
         }
