@@ -48,7 +48,6 @@ public class EntityCraft extends BlockEntityBase implements IMultiplePassengerEn
 
     public CraftController controller = new CraftController(this);
     int                    energy     = 0;
-    public UUID            id         = null;
     public UUID            owner;
 
     public EntityCraft(World par1World)
@@ -101,9 +100,9 @@ public class EntityCraft extends BlockEntityBase implements IMultiplePassengerEn
         toMoveX = controller.leftInputDown || controller.rightInputDown;
         toMoveZ = controller.backInputDown || controller.forwardInputDown;
         toMoveY = controller.upInputDown || controller.downInputDown;
-        float destY = (float) (toMoveY ? (controller.upInputDown ? 30 : -30) : 0);
-        float destX = (float) (toMoveX ? (controller.leftInputDown ? 30 : -30) : 0);
-        float destZ = (float) (toMoveZ ? (controller.forwardInputDown ? 30 : -30) : 0);
+        float destY = toMoveY ? (controller.upInputDown ? 30 : -30) : 0;
+        float destX = toMoveX ? (controller.leftInputDown ? 30 : -30) : 0;
+        float destZ = toMoveZ ? (controller.forwardInputDown ? 30 : -30) : 0;
         toMoveY = toMoveX = toMoveZ = false;
 
         if (destX == destY && destY == destZ && destZ == 0)

@@ -1,7 +1,5 @@
 package thut.crafts.entity;
 
-import net.minecraftforge.fml.common.eventhandler.Event;
-
 public class EventCraftConsumePower extends Event
 {
     public final EntityCraft craft;

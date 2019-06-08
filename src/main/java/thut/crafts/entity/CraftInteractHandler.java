@@ -6,7 +6,6 @@ import javax.vecmath.Vector3f;
 import net.minecraft.block.BlockStairs;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumHand;
@@ -28,6 +27,7 @@ public class CraftInteractHandler extends BlockEntityInteractHandler
         this.craft = lift;
     }
 
+    @Override
     public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec, ItemStack stack, EnumHand hand)
     {
         if (player.isSneaking()) return EnumActionResult.PASS;
@@ -109,6 +109,7 @@ public class CraftInteractHandler extends BlockEntityInteractHandler
         return EnumActionResult.PASS;
     }
 
+    @Override
     public boolean processInitialInteract(EntityPlayer player, @Nullable ItemStack stack, EnumHand hand)
     {
         if (stack.getItem() == Items.BLAZE_ROD)

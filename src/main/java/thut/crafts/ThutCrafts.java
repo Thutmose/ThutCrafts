@@ -1,11 +1,11 @@
 package thut.crafts;
 
-import org.lwjgl.input.Keyboard;
+import com.mojang.blaze3d.platform.GlStateManager;
 
+import net.java.games.input.Keyboard;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
@@ -13,7 +13,6 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumHand;
@@ -25,21 +24,21 @@ import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedOutEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
-import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import thut.api.entity.blockentity.IBlockEntity;
 import thut.api.entity.blockentity.RenderBlockEntity;
 import thut.api.maths.Vector3;
@@ -52,7 +51,8 @@ import thut.crafts.network.PacketPipeline.ClientPacket.MessageHandlerClient;
 import thut.crafts.network.PacketPipeline.ServerPacket;
 import thut.crafts.network.PacketPipeline.ServerPacket.MessageHandlerServer;
 
-@Mod(modid = Reference.MODID, name = "ThutCrafts", dependencies = "required-after:thutcore", version = Reference.VERSION, acceptedMinecraftVersions = Reference.MCVERSIONS)
+@Mod(Reference.MODID)
+@EventBusSubscriber
 public class ThutCrafts
 {
     private boolean canRotate = false;
@@ -136,9 +136,9 @@ public class ThutCrafts
                 max = new BlockPos(box.maxX, box.maxY, box.maxZ).add(1, 1, 1);
                 box = new AxisAlignedBB(min, max);
                 float partialTicks = event.getPartialTicks();
-                double d0 = player.lastTickPosX + (player.posX - player.lastTickPosX) * (double) partialTicks;
-                double d1 = player.lastTickPosY + (player.posY - player.lastTickPosY) * (double) partialTicks;
-                double d2 = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * (double) partialTicks;
+                double d0 = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks;
+                double d1 = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks;
+                double d2 = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
                 box = box.offset(-d0, -d1, -d2);
                 GlStateManager.enableBlend();
                 GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA,
