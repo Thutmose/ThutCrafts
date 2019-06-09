@@ -7,7 +7,7 @@ import net.minecraft.block.BlockStairs;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumActionResult;
+import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.MutableBlockPos;
@@ -28,12 +28,12 @@ public class CraftInteractHandler extends BlockEntityInteractHandler
     }
 
     @Override
-    public EnumActionResult applyPlayerInteraction(PlayerEntity player, Vec3d vec, ItemStack stack, Hand hand)
+    public ActionResultType applyPlayerInteraction(PlayerEntity player, Vec3d vec, ItemStack stack, Hand hand)
     {
-        if (player.isSneaking()) return EnumActionResult.PASS;
-        EnumActionResult result = super.applyPlayerInteraction(player, vec, stack, hand);
-        if (result == EnumActionResult.SUCCESS || processInitialInteract(player, player.getHeldItem(hand), hand))
-            return EnumActionResult.SUCCESS;
+        if (player.isSneaking()) return ActionResultType.PASS;
+        ActionResultType result = super.applyPlayerInteraction(player, vec, stack, hand);
+        if (result == ActionResultType.SUCCESS || processInitialInteract(player, player.getHeldItem(hand), hand))
+            return ActionResultType.SUCCESS;
         vec = vec.add(vec.x > 0 ? -0.01 : 0.01, vec.y > 0 ? -0.01 : 0.01, vec.z > 0 ? -0.01 : 0.01);
         Vec3d playerPos = player.getPositionVector().add(0, player.getEyeHeight(), 0);
         Vec3d start = playerPos.subtract(craft.getPositionVector());
@@ -106,7 +106,7 @@ public class CraftInteractHandler extends BlockEntityInteractHandler
                 }
             }
         }
-        return EnumActionResult.PASS;
+        return ActionResultType.PASS;
     }
 
     @Override

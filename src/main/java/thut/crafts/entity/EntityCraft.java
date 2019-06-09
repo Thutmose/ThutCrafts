@@ -404,7 +404,7 @@ public class EntityCraft extends BlockEntityBase implements IMultiplePassengerEn
     public void writeEntityToNBT(CompoundNBT nbt)
     {
         super.writeEntityToNBT(nbt);
-        nbt.setInteger("energy", energy);
+        nbt.putInt("energy", energy);
         ListNBT seats = new ListNBT();
         for (int i = 0; i < getSeatCount(); i++)
         {
