@@ -8,7 +8,7 @@ import javax.vecmath.Vector3f;
 import com.google.common.collect.Lists;
 
 import net.minecraft.block.BlockStairs;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.MoverType;
 import net.minecraft.nbt.CompoundNBT;
@@ -127,7 +127,7 @@ public class EntityCraft extends BlockEntityBase implements IMultiplePassengerEn
         {
             Vector3 rel = Vector3.getNewVector().set(this).addTo(seat.seat.x, seat.seat.y, seat.seat.z);
             BlockPos pos = rel.getPos();
-            IBlockState block = getFakeWorld().getBlockState(pos);
+            BlockState block = getFakeWorld().getBlockState(pos);
             switch (block.getValue(BlockStairs.FACING))
             {
             case DOWN:
@@ -386,7 +386,7 @@ public class EntityCraft extends BlockEntityBase implements IMultiplePassengerEn
     public void readEntityFromNBT(CompoundNBT nbt)
     {
         super.readEntityFromNBT(nbt);
-        energy = nbt.getInteger("energy");
+        energy = nbt.getInt("energy");
         if (nbt.hasKey("seats"))
         {
             ListNBT seatsList = nbt.getTagList("seats", 10);

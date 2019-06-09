@@ -8,7 +8,7 @@ import javax.xml.ws.handler.MessageContext;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
@@ -111,7 +111,7 @@ public class PacketPipeline
                     @Override
                     public void run()
                     {
-                        IBlockState state = player1.world.getBlockState(pos);
+                        BlockState state = player1.world.getBlockState(pos);
                         state.getBlock().onBlockActivated(player1.world, pos, state, player1, Hand.MAIN_HAND,
                                 side, hit.x, hit.y, hit.z);
                     }

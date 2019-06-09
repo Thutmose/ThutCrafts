@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import javax.vecmath.Vector3f;
 
 import net.minecraft.block.BlockStairs;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumActionResult;
@@ -48,7 +48,7 @@ public class CraftInteractHandler extends BlockEntityInteractHandler
         {
             pos = trace.getBlockPos();
         }
-        IBlockState state = craft.getFakeWorld().getBlockState(pos);
+        BlockState state = craft.getFakeWorld().getBlockState(pos);
         if (trace != null && state.getBlock() instanceof BlockStairs)
         {
             if (craft.getSeatCount() == 0)
@@ -65,7 +65,7 @@ public class CraftInteractHandler extends BlockEntityInteractHandler
                         for (int k = 0; k < sizeZ; k++)
                         {
                             pos1.setPos(i + xMin + craft.posX, j + yMin + craft.posY, k + zMin + craft.posZ);
-                            IBlockState state1 = craft.getFakeWorld().getBlockState(pos1);
+                            BlockState state1 = craft.getFakeWorld().getBlockState(pos1);
                             if (state1.getBlock() instanceof BlockStairs)
                             {
                                 Vector3f seat = new Vector3f(i + xMin, j + yMin + 0.5f, k + zMin);
